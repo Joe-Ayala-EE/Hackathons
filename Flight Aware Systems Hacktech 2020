@@ -1,0 +1,170 @@
+/*
+ * Project: HackTech Hardware Hack Flight Aware Systems
+ * Developer: Joseph Daniel Ayala
+ * Developer Contact: jayal024@@ucr.edu
+ */
+
+
+#include <Wire.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Fonts/FreeSerif9pt7b.h>
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+int led_pin = 7;      //Status LED
+RF24 radio(9, 10);    //Set the Radio pins on the arduino uno
+const byte addresses[][6] = {"00001", "00002"};
+double pitch_state = 0; //Set pitch state to 0 or "level"
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(led_pin, OUTPUT); //Set the indicator LED to an Output pin
+  pinMode (pitch_state, INPUT); //Incoming signal from RF channel will be sent to here
+
+
+  radio.begin();                            //Turn on the Radio module
+  radio.openWritingPipe (addresses[0]);     //Open a channel to send information on
+  radio.openReadingPipe (1, addresses[1]);  //Open a channel to listen for information on
+  radio.setPALevel(RF24_PA_MIN);
+  radio.startListening();
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Information for OLED display
+  Serial.println(F("SSD1306 allocation failed"));
+   for(;;);
+  }
+
+}
+
+void loop() {
+  pitch_state = digitalRead()
+  delay(2000);
+  display.clearDisplay();
+  display.setFont(&FreeSerif9pt7b);
+  display.setFont();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.println("Flight Aware Systems");
+  display.setCursor(0, 16);
+  display.println("Bearing: ");
+      radio.startListening();
+  if (radio.available()) {
+    char text[32] = "";
+    radio.read(&text, sizeof(text));
+    radio.read(&button_state, sizeof(button_state));
+    if (button_state == 0)
+    {
+    digitalWrite (led_pin, HIGH);
+    Serial.println(text);
+    Serial.println(button_state);
+    myServo.write(90);  
+    delay(15);
+    }
+    else{
+    digitalWrite(led_pin,LOW);
+    Serial.println(text);
+    myServo.write (0);
+    }
+  }
+}
+/*
+ * Project: HackTech Hardware Hack Flight Aware Systems
+ * Aircraft portion of the code
+ * Developer: Joseph Daniel Ayala
+ * Developer Contact: jayal024@@ucr.edu
+ */
+
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+#include <Servo.h>  
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+Servo Elevator
+
+int led_pin = 7;      //Status LED
+RF24 radio(9, 10);    //Set the Radio pins on the arduino uno
+const byte addresses[][6] = {"00001", "00002"};
+int position = 0; 
+void setup(void) 
+float pitch_angle = 0;
+{
+  Serial.begin(9600);
+  Serial.println("Orientation Sensor Test"); Serial.println("");
+ 
+  pinMode (pitch_angle, INPUT); 
+  Elevator.attach (6); // Attach to elevator of the aircraft 
+  
+  if(!bno.begin())
+  {
+  
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while(1);
+  }
+  radio.begin();                            //Turn on the Radio module
+  radio.openWritingPipe (addresses[0]);     //Open a channel to send information on
+  radio.openReadingPipe (1, addresses[1]);  //Open a channel to listen for information on
+  radio.setPALevel(RF24_PA_MIN);
+  radio.startListening();
+  delay(1000);
+    
+  bno.setExtCrystalUse(true);
+}
+ 
+void loop() 
+{
+  /* Get a new sensor event */ 
+  sensors_event_t event; 
+  bno.getEvent(&event);
+  int x_event = event.orientation.x;
+  int y_event = event.orientation.y;
+  
+  /* Display the floating point data */
+  Serial.print("X: ");
+  Serial.print(x_event, 4);
+  Serial.print("\tY: ");
+  Serial.print(event.orientation.y, 4);
+  Serial.println("");
+  
+  delay(100);
+
+  //Orientation - Pitch Angle Caluculation
+  pitch_angle = atan(x_event,y_event);
+  Serial.print("\tAircrafts current Pitch angle: "); 
+  Serial.print(pitch_angle);
+
+/*
+ * Go into a continous loop where we are calculating and correcting 
+ * steep or unnecessary angles 
+ */
+
+if (pos = pitch_anglel pos >= -45; pos -=1)
+  Elevator.write(pos); 
+  // With the calculated pitch angle we can send it to the ground control station (GCS)
+  //Send information to GCS
+  if(bno.getEvent == HIGH)
+  {
+const char text[] = "Pitch angle is HIGH";
+radio.write(&text, sizeof(text));                  //Sending the message to receiver
+}
+else
+{
+const char text[] = "Pitch angle is LOW";
+radio.write(&text, sizeof(text));                  //Sending the message to receiver 
+}
+radio.write(&pitch_angle, sizeof(pitch_angle));  //Sending the message to receiver 
+delay(1000);
+
+
+
+  
+}
